@@ -161,12 +161,13 @@ class ContainerInventory:
             size /= 1024.0
         return f"{size:.2f}PB"
 
-    def scan_image_vulnerabilities(self, image_id: str) -> Dict:
+    def scan_image_vulnerabilities(self, image_id: str, image_source: str | None) -> Dict:
         """
         Scan a container image for vulnerabilities using Trivy.
 
         Args:
             image_id: The ID or name of the image to scan
+            image_source: The source of the image ("docker" or "podman")
 
         Returns:
             Dictionary with vulnerability information
@@ -183,13 +184,51 @@ class ContainerInventory:
             task = progress.add_task("Scanning", total=100)
 
             try:
-                result = subprocess.run(
-                    ["trivy", "image", "--format", "json", image_id],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    check=False,  # Don't raise exception on non-zero return code (Trivy returns non-zero when vulns found)
-                )
+                # Use different approaches for Docker vs Podman
+                if image_source == "podman":
+                    # For Podman, export the image to a tarball and scan that instead
+                    console.print("[blue]Using Podman export method for scanning...[/]")
+
+                    # Create a temporary directory for the image tarball
+                    import tempfile
+                    import os
+
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        # Export the Podman image to a tarball
+                        image_tar = os.path.join(temp_dir, "image.tar")
+                        export_cmd = ["podman", "save", "-o", image_tar, image_id]
+
+                        export_result = subprocess.run(
+                            export_cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            check=False,
+                        )
+
+                        if export_result.returncode != 0:
+                            return {
+                                "error": f"Error exporting Podman image: {export_result.stderr}",
+                                "vulnerabilities": [],
+                            }
+
+                        # Now scan the tarball with Trivy
+                        result = subprocess.run(
+                            ["trivy", "image", "--input", image_tar, "--format", "json"],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            check=False,
+                        )
+                else:
+                    # Default approach for Docker
+                    result = subprocess.run(
+                        ["trivy", "image", "--format", "json", image_id],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        check=False,  # Don't raise exception on non-zero return code (Trivy returns non-zero when vulns found)
+                    )
 
                 progress.update(task, completed=100)
 

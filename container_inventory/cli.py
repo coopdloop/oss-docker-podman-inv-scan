@@ -102,21 +102,36 @@ def main():
                     return
 
                 console.print(f"\nScanning image: {args.image}")
-                scan_result = inventory.scan_image_vulnerabilities(args.image)
+                # Determine the source (docker/podman) of the image if possible
+                image_source = next(
+                    (
+                        i.get("source", "")
+                        for i in all_images
+                        if i.get("ID", "") == args.image
+                        or f"{i.get('Repository', '')}:{i.get('Tag', '')}" == args.image
+                    ),
+                    None,
+                )
+                scan_result = inventory.scan_image_vulnerabilities(args.image, image_source)
                 inventory.display_vulnerabilities(scan_result)
                 scan_results.append(scan_result)
             else:
                 # Scan all images
                 for image in all_images:
                     image_id = image.get("ID", "")
+                    image_source = image.get("source", "")
+
                     if not image_id:
                         continue
 
-                    # For podman, we may need to use the full ID
-                    if image.get("source") == "podman":
-                        image_id = image.get("ID", "")
+                    # For podman images, use the repository:tag format if available
+                    if image_source == "podman":
+                        repo = image.get("Repository", "")
+                        tag = image.get("Tag", "")
+                        if repo != "<none>" and tag != "<none>":
+                            image_id = f"{repo}:{tag}"
 
-                    scan_result = inventory.scan_image_vulnerabilities(image_id)
+                    scan_result = inventory.scan_image_vulnerabilities(image_id, image_source)
                     inventory.display_vulnerabilities(scan_result)
                     scan_results.append(scan_result)
 
