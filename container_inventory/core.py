@@ -12,13 +12,7 @@ from typing import Dict, List
 
 from rich.console import Console
 from rich.table import Table
-from rich.progress import (
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    BarColumn,
-    TaskProgressColumn,
-)
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 # Initialize Rich console
 console = Console()
@@ -41,13 +35,9 @@ class ContainerInventory:
 
         # Check if at least one container runtime is available
         if container_type != "all" and not getattr(self, f"{container_type}_available"):
-            console.print(
-                f"[bold red]Error:[/] {container_type} is not available on this system"
-            )
+            console.print(f"[bold red]Error:[/] {container_type} is not available on this system")
             sys.exit(1)
-        elif container_type == "all" and not (
-            self.docker_available or self.podman_available
-        ):
+        elif container_type == "all" and not (self.docker_available or self.podman_available):
             console.print(
                 "[bold red]Error:[/] Neither Docker nor Podman is available on this system"
             )
@@ -64,10 +54,7 @@ class ContainerInventory:
         """Check if a command-line tool is available."""
         try:
             subprocess.run(
-                [tool, "--version"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=False,
+                [tool, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
             )
             return True
         except FileNotFoundError:
@@ -94,9 +81,7 @@ class ContainerInventory:
     def _get_docker_images(self) -> List[Dict]:
         """Get a list of Docker images."""
         with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]Fetching Docker images...[/]"),
-            transient=True,
+            SpinnerColumn(), TextColumn("[bold blue]Fetching Docker images...[/]"), transient=True
         ) as progress:
             progress.add_task("", total=None)
 
@@ -123,9 +108,7 @@ class ContainerInventory:
     def _get_podman_images(self) -> List[Dict]:
         """Get a list of Podman images."""
         with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]Fetching Podman images...[/]"),
-            transient=True,
+            SpinnerColumn(), TextColumn("[bold blue]Fetching Podman images...[/]"), transient=True
         ) as progress:
             progress.add_task("", total=None)
 
@@ -154,9 +137,10 @@ class ContainerInventory:
                             if img.get("Names")
                             else "<none>"
                         ),
-                        "ID": img.get("Id", "")[:12],
-                        "CreatedAt": img.get("Created", ""),
-                        "Size": self._format_size(img.get("Size", 0)),
+                        "ID": str(img.get("Id", ""))[:12],
+                        "CreatedAt": str(img.get("Created", "")),
+                        "Size": self._format_size(int(img.get("Size", 0))),
+                        "source": "podman",
                     }
                     normalized_images.append(normalized)
 
@@ -170,11 +154,12 @@ class ContainerInventory:
 
     def _format_size(self, size_bytes: int) -> str:
         """Format bytes to human-readable size."""
+        size = float(size_bytes)  # Create a separate float variable
         for unit in ["B", "KB", "MB", "GB", "TB"]:
-            if size_bytes < 1024.0:
-                return f"{size_bytes:.2f}{unit}"
-            size_bytes /= 1024.0
-        return f"{size_bytes:.2f}PB"
+            if size < 1024.0:
+                return f"{size:.2f}{unit}"
+            size /= 1024.0
+        return f"{size:.2f}PB"
 
     def scan_image_vulnerabilities(self, image_id: str) -> Dict:
         """
@@ -222,10 +207,7 @@ class ContainerInventory:
                         "results": scan_result,
                     }
                 except json.JSONDecodeError:
-                    return {
-                        "error": "Could not parse scanner output",
-                        "vulnerabilities": [],
-                    }
+                    return {"error": "Could not parse scanner output", "vulnerabilities": []}
 
             except Exception as e:
                 return {"error": f"Error during scan: {str(e)}", "vulnerabilities": []}
@@ -243,12 +225,12 @@ class ContainerInventory:
 
         for image in images:
             table.add_row(
-                image.get("ID", ""),
-                image.get("Repository", ""),
-                image.get("Tag", ""),
-                image.get("CreatedAt", ""),
-                image.get("Size", ""),
-                image.get("source", ""),
+                str(image.get("ID", "")),
+                str(image.get("Repository", "")),
+                str(image.get("Tag", "")),
+                str(image.get("CreatedAt", "")),
+                str(image.get("Size", "")),
+                str(image.get("source", "")),
             )
 
         console.print(table)
@@ -259,9 +241,7 @@ class ContainerInventory:
             console.print(f"[bold red]Error:[/] {scan_result['error']}")
             return
 
-        console.print(
-            f"\n[bold]Vulnerability Scan Results for {scan_result['image']}[/]"
-        )
+        console.print(f"\n[bold]Vulnerability Scan Results for {scan_result['image']}[/]")
         console.print(f"Scan completed at: {scan_result['scan_time']}\n")
 
         if "results" not in scan_result or not scan_result["results"]:
@@ -277,9 +257,7 @@ class ContainerInventory:
                 console.print("[green]No vulnerabilities found in this target.[/]")
                 continue
 
-            vuln_table = Table(
-                title=f"Vulnerabilities in {result.get('Target', 'Unknown')}"
-            )
+            vuln_table = Table(title=f"Vulnerabilities in {result.get('Target', 'Unknown')}")
             vuln_table.add_column("ID", style="cyan", no_wrap=True)
             vuln_table.add_column("Package", style="blue")
             vuln_table.add_column("Installed", style="blue")
@@ -288,18 +266,10 @@ class ContainerInventory:
             vuln_table.add_column("Title", style="white")
 
             # Sort vulnerabilities by severity
-            severity_order = {
-                "CRITICAL": 0,
-                "HIGH": 1,
-                "MEDIUM": 2,
-                "LOW": 3,
-                "UNKNOWN": 4,
-            }
+            severity_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "UNKNOWN": 4}
             sorted_vulns = sorted(
                 result["Vulnerabilities"],
-                key=lambda v: severity_order.get(
-                    v.get("Severity", "UNKNOWN").upper(), 999
-                ),
+                key=lambda v: severity_order.get(v.get("Severity", "UNKNOWN").upper(), 999),
             )
 
             for vuln in sorted_vulns:
@@ -318,16 +288,13 @@ class ContainerInventory:
                     vuln.get("InstalledVersion", ""),
                     vuln.get("FixedVersion", ""),
                     f"[{severity_style}]{severity}[/{severity_style}]",
-                    vuln.get("Title", "")[:50]
-                    + ("..." if len(vuln.get("Title", "")) > 50 else ""),
+                    vuln.get("Title", "")[:50] + ("..." if len(vuln.get("Title", "")) > 50 else ""),
                 )
 
             console.print(vuln_table)
             console.print("")  # Add space between tables
 
-    def save_inventory(
-        self, images: List[Dict], output_file: str, append: bool = False
-    ) -> None:
+    def save_inventory(self, images: List[Dict], output_file: str, append: bool = False) -> None:
         """
         Save inventory to a file.
 
@@ -341,19 +308,11 @@ class ContainerInventory:
         try:
             with open(output_file, mode) as f:
                 # If appending and file exists but is empty, write the opening bracket
-                if (
-                    append
-                    and os.path.exists(output_file)
-                    and os.path.getsize(output_file) == 0
-                ):
+                if append and os.path.exists(output_file) and os.path.getsize(output_file) == 0:
                     mode = "w"
 
                 # If appending to a non-empty JSON file, we need to handle the JSON structure
-                if (
-                    append
-                    and os.path.exists(output_file)
-                    and os.path.getsize(output_file) > 0
-                ):
+                if append and os.path.exists(output_file) and os.path.getsize(output_file) > 0:
                     # Read existing content
                     f.seek(0)
                     try:
@@ -365,9 +324,7 @@ class ContainerInventory:
                             f.seek(0)
                             f.truncate(0)
                             json.dump(combined_data, f, indent=2)
-                            console.print(
-                                f"[green]Successfully appended to {output_file}[/]"
-                            )
+                            console.print(f"[green]Successfully appended to {output_file}[/]")
                             return
                         else:
                             console.print(
@@ -405,18 +362,10 @@ class ContainerInventory:
         try:
             # Similar logic to save_inventory
             with open(output_file, mode) as f:
-                if (
-                    append
-                    and os.path.exists(output_file)
-                    and os.path.getsize(output_file) == 0
-                ):
+                if append and os.path.exists(output_file) and os.path.getsize(output_file) == 0:
                     mode = "w"
 
-                if (
-                    append
-                    and os.path.exists(output_file)
-                    and os.path.getsize(output_file) > 0
-                ):
+                if append and os.path.exists(output_file) and os.path.getsize(output_file) > 0:
                     f.seek(0)
                     try:
                         existing_data = json.load(f)
@@ -426,9 +375,7 @@ class ContainerInventory:
                             f.seek(0)
                             f.truncate(0)
                             json.dump(combined_data, f, indent=2)
-                            console.print(
-                                f"[green]Successfully appended to {output_file}[/]"
-                            )
+                            console.print(f"[green]Successfully appended to {output_file}[/]")
                             return
                         else:
                             console.print(
