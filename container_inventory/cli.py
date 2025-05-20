@@ -39,17 +39,13 @@ def setup_cli():
         help="Append to existing output file instead of overwriting",
     )
 
-    parser.add_argument(
-        "--scan", "-s", action="store_true", help="Scan images for vulnerabilities"
-    )
+    parser.add_argument("--scan", "-s", action="store_true", help="Scan images for vulnerabilities")
 
     parser.add_argument(
-        "--vulns-output", "-v", help="Save vulnerability scan results to specified file"
+        "--vulns-output", "-v", help="Save vulnerability scan results to specified JSON file"
     )
 
-    parser.add_argument(
-        "--image", "-i", help="Scan only the specified image (requires --scan)"
-    )
+    parser.add_argument("--image", "-i", help="Scan only the specified image (requires --scan)")
 
     return parser.parse_args()
 
@@ -86,9 +82,7 @@ def main():
         # Scan for vulnerabilities if requested
         if args.scan:
             if not inventory.trivy_available:
-                console.print(
-                    "[bold red]Cannot scan: Trivy vulnerability scanner not available[/]"
-                )
+                console.print("[bold red]Cannot scan: Trivy vulnerability scanner not available[/]")
                 return
 
             scan_results = []
@@ -128,9 +122,7 @@ def main():
 
             # Save vulnerability results if requested
             if args.vulns_output:
-                inventory.save_vulnerabilities(
-                    scan_results, args.vulns_output, args.append
-                )
+                inventory.save_vulnerabilities(scan_results, args.vulns_output, args.append)
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Operation cancelled by user[/]")
