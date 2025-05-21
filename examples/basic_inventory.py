@@ -21,9 +21,7 @@ def main():
     inventory.display_inventory(images)
 
     # Filter for specific images (example: Alpine-based images)
-    alpine_images = [
-        img for img in images if "alpine" in img.get("Repository", "").lower()
-    ]
+    alpine_images = [img for img in images if "alpine" in img.get("Repository", "").lower()]
 
     if alpine_images:
         print("\nAlpine-based images:")

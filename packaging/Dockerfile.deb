@@ -1,0 +1,28 @@
+FROM ubuntu:latest
+
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    devscripts \
+    debhelper \
+    dh-python \
+    python3-all \
+    python3-setuptools \
+    python3-pip \
+    python3-pytest \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install project dependencies - none required
+
+# Create build user
+RUN useradd -m builder
+USER builder
+WORKDIR /home/builder
+
+# Add entrypoint script
+USER root
+COPY docker-entrypoint-deb.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+USER builder
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

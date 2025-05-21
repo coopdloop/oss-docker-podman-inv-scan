@@ -45,9 +45,7 @@ def create_test_images():
     podman_available = check_tool_availability("podman")
 
     if not docker_available and not podman_available:
-        console.print(
-            "[bold red]Error:[/] Neither Docker nor Podman is available on this system"
-        )
+        console.print("[bold red]Error:[/] Neither Docker nor Podman is available on this system")
         sys.exit(1)
 
     # Create a temporary directory for files
@@ -188,15 +186,13 @@ ENTRYPOINT ["/usr/local/bin/hello"]
         console.print(
             "\nYou can now run the container inventory tool to view and scan these images:"
         )
-        console.print("[blue]container-inventory --scan[/]")
+        console.print("[blue]container_inventory --scan[/]")
 
 
 def main():
     """Main entry point for the script."""
     try:
-        console.print(
-            Panel.fit("[bold blue]Container Image Test Builder[/]", border_style="blue")
-        )
+        console.print(Panel.fit("[bold blue]Container Image Test Builder[/]", border_style="blue"))
 
         create_test_images()
 

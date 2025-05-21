@@ -1,0 +1,2 @@
+# This file is not needed as we use debhelper-compat dependency instead
+# File will be removed during build process

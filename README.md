@@ -12,11 +12,11 @@ A comprehensive Docker and Podman container image inventory and vulnerability sc
 - **Multi-Runtime Support**: Works with both Docker and Podman
 - **Automatic Detection**: Detects available container runtimes on your system
 - **Vulnerability Scanning**: Scans images for security vulnerabilities using Trivy
-- **Rich CLI Interface**: User-friendly, colorful command-line interface
+- **No External Dependencies**: Uses only standard Python libraries
+- **Colored Terminal Output**: User-friendly, colorful command-line interface
 - **Flexible Output**: Save inventory and scan results to JSON files
 - **Append Mode**: Add new scan results to existing files
 - **Selective Scanning**: Scan all images or just specific ones
-- **Progress Indicators**: Visual feedback during operations
 
 ## Installation
 

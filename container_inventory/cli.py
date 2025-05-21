@@ -6,13 +6,7 @@ Command-line interface for Container Image Inventory and Vulnerability Scanner.
 import argparse
 import sys
 
-from rich.console import Console
-from rich.panel import Panel
-
-from container_inventory.core import ContainerInventory
-
-# Initialize Rich console
-console = Console()
+from container_inventory.core import ContainerInventory, Colors
 
 
 def setup_cli():
@@ -42,7 +36,7 @@ def setup_cli():
     parser.add_argument("--scan", "-s", action="store_true", help="Scan images for vulnerabilities")
 
     parser.add_argument(
-        "--vulns-output", "-v", help="Save vulnerability scan results to specified JSON file"
+        "--vulns-output", "-v", help="Save vulnerability scan results to specified file"
     )
 
     parser.add_argument("--image", "-i", help="Scan only the specified image (requires --scan)")
@@ -56,11 +50,8 @@ def main():
         args = setup_cli()
 
         # Print header
-        console.print(
-            Panel.fit(
-                "[bold blue]Container Image Inventory and Vulnerability Scanner[/]",
-                border_style="blue",
-            )
+        print(
+            f"\n{Colors.BOLD}{Colors.BLUE}Container Image Inventory and Vulnerability Scanner{Colors.RESET}\n"
         )
 
         inventory = ContainerInventory(args.type)
@@ -69,7 +60,7 @@ def main():
         all_images = inventory.get_images()
 
         if not all_images:
-            console.print("[yellow]No container images found.[/]")
+            print(f"{Colors.YELLOW}No container images found.{Colors.RESET}")
             return
 
         # Display inventory
@@ -82,7 +73,9 @@ def main():
         # Scan for vulnerabilities if requested
         if args.scan:
             if not inventory.trivy_available:
-                console.print("[bold red]Cannot scan: Trivy vulnerability scanner not available[/]")
+                print(
+                    f"{Colors.BOLD}{Colors.RED}Cannot scan: Trivy vulnerability scanner not available{Colors.RESET}"
+                )
                 return
 
             scan_results = []
@@ -96,12 +89,12 @@ def main():
                 )
 
                 if not image_exists:
-                    console.print(
-                        f"[bold red]Error:[/] Image '{args.image}' not found in inventory"
+                    print(
+                        f"{Colors.BOLD}{Colors.RED}Error:{Colors.RESET} Image '{args.image}' not found in inventory"
                     )
                     return
 
-                console.print(f"\nScanning image: {args.image}")
+                print(f"\nScanning image: {args.image}")
                 # Determine the source (docker/podman) of the image if possible
                 image_source = next(
                     (
@@ -140,10 +133,10 @@ def main():
                 inventory.save_vulnerabilities(scan_results, args.vulns_output, args.append)
 
     except KeyboardInterrupt:
-        console.print("\n[yellow]Operation cancelled by user[/]")
+        print(f"\n{Colors.YELLOW}Operation cancelled by user{Colors.RESET}")
         sys.exit(1)
     except Exception as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        print(f"{Colors.BOLD}{Colors.RED}Error:{Colors.RESET} {str(e)}")
         sys.exit(1)
 
 

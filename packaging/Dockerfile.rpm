@@ -1,0 +1,22 @@
+FROM fedora:latest
+
+# Install required packages
+RUN dnf install -y rpm-build rpmdevtools rpmlint python3-devel python3-setuptools python3-pip python3-pytest
+
+# Install project dependencies - none required
+
+# Create build user
+RUN useradd -m builder
+USER builder
+WORKDIR /home/builder
+
+# Create RPM build directories
+RUN mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+
+# Add entrypoint script
+USER root
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+USER builder
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

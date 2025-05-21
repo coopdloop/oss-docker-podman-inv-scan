@@ -6,13 +6,13 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="container-inventory",
     version="0.1.0",
-    author="coopdloop",
-    author_email="coopdevsec@proton.me",
+    author="Your Name",
+    author_email="your.email@example.com",
     description="Docker and Podman container image inventory and vulnerability scanning tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/coopdloop/oss-docker-podman-inv-scan",
-    packages=find_packages(),
+    url="https://github.com/yourusername/container-inventory",
+    packages=find_packages(exclude=["tests", "tests.*"]),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -30,9 +30,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
-    install_requires=[
-        "rich>=10.0.0",
-    ],
+    install_requires=[],
     extras_require={
         "dev": [
             "pytest>=6.0.0",

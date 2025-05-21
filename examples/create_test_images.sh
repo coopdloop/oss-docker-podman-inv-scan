@@ -119,4 +119,4 @@ cd ..
 echo "Test images created successfully!"
 echo
 echo "You can now run the container inventory tool to view and scan these images:"
-echo "container-inventory --scan"
+echo "container_inventory --scan"

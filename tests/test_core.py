@@ -23,27 +23,30 @@ class TestContainerInventory(unittest.TestCase):
         mock_run.side_effect = FileNotFoundError()
         self.assertFalse(inventory._check_tool_availability("nonexistent-tool"))
 
-    @patch("container_inventory.core.ContainerInventory._check_tool_availability")
-    def test_init(self, mock_check):
+    @patch("container_inventory.core.subprocess.run")
+    def test_init(self, mock_run):
         """Test initialization of ContainerInventory."""
-        # Both Docker and Podman available
-        mock_check.side_effect = lambda tool: tool in ["docker", "podman", "trivy"]
-        inventory = ContainerInventory()
-        self.assertEqual(inventory.container_type, "all")
-        self.assertTrue(inventory.docker_available)
-        self.assertTrue(inventory.podman_available)
+        with patch(
+            "container_inventory.core.ContainerInventory._check_tool_availability"
+        ) as mock_check:
+            # Both Docker and Podman available
+            mock_check.side_effect = lambda tool: tool in ["docker", "podman", "trivy"]
+            inventory = ContainerInventory()
+            self.assertEqual(inventory.container_type, "all")
+            self.assertTrue(inventory.docker_available)
+            self.assertTrue(inventory.podman_available)
 
-        # Only Docker available
-        mock_check.side_effect = lambda tool: tool == "docker"
-        inventory = ContainerInventory()
-        self.assertTrue(inventory.docker_available)
-        self.assertFalse(inventory.podman_available)
+            # Only Docker available
+            mock_check.side_effect = lambda tool: tool == "docker"
+            inventory = ContainerInventory()
+            self.assertTrue(inventory.docker_available)
+            self.assertFalse(inventory.podman_available)
 
-        # Only Podman available
-        mock_check.side_effect = lambda tool: tool == "podman"
-        inventory = ContainerInventory()
-        self.assertFalse(inventory.docker_available)
-        self.assertTrue(inventory.podman_available)
+            # Only Podman available
+            mock_check.side_effect = lambda tool: tool == "podman"
+            inventory = ContainerInventory()
+            self.assertFalse(inventory.docker_available)
+            self.assertTrue(inventory.podman_available)
 
     @patch("container_inventory.core.ContainerInventory._check_tool_availability")
     @patch("container_inventory.core.ContainerInventory._get_docker_images")
@@ -89,17 +92,22 @@ class TestContainerInventory(unittest.TestCase):
 
     def test_format_size(self):
         """Test formatting bytes to human-readable sizes."""
-        inventory = ContainerInventory()
+        # Use patch to avoid sys.exit when Docker/Podman aren't available
+        with patch(
+            "container_inventory.core.ContainerInventory._check_tool_availability",
+            return_value=True,
+        ):
+            inventory = ContainerInventory()
 
-        # Test various sizes
-        self.assertEqual(inventory._format_size(500), "500.00B")
-        self.assertEqual(inventory._format_size(1024), "1.00KB")
-        self.assertEqual(inventory._format_size(1048576), "1.00MB")
-        self.assertEqual(inventory._format_size(1073741824), "1.00GB")
-        self.assertEqual(inventory._format_size(1099511627776), "1.00TB")
+            # Test various sizes
+            self.assertEqual(inventory._format_size(500), "500.00B")
+            self.assertEqual(inventory._format_size(1024), "1.00KB")
+            self.assertEqual(inventory._format_size(1048576), "1.00MB")
+            self.assertEqual(inventory._format_size(1073741824), "1.00GB")
+            self.assertEqual(inventory._format_size(1099511627776), "1.00TB")
 
-        # Test large number that would be in PB
-        self.assertEqual(inventory._format_size(1125899906842624), "1.00PB")
+            # Test large number that would be in PB
+            self.assertEqual(inventory._format_size(1125899906842624), "1.00PB")
 
 
 if __name__ == "__main__":

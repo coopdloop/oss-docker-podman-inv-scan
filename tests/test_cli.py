@@ -14,7 +14,7 @@ class TestCLI(unittest.TestCase):
     def test_setup_cli(self):
         """Test CLI argument setup."""
         # Mock sys.argv to test argument parsing
-        with patch("sys.argv", ["container-inventory", "--type", "docker"]):
+        with patch("sys.argv", ["container_inventory", "--type", "docker"]):
             args = setup_cli()
             self.assertEqual(args.type, "docker")
             self.assertFalse(args.scan)
@@ -24,29 +24,29 @@ class TestCLI(unittest.TestCase):
             self.assertIsNone(args.image)
 
         # Test with scan option
-        with patch("sys.argv", ["container-inventory", "--scan"]):
+        with patch("sys.argv", ["container_inventory", "--scan"]):
             args = setup_cli()
             self.assertEqual(args.type, "all")  # default value
             self.assertTrue(args.scan)
 
         # Test with output option
-        with patch("sys.argv", ["container-inventory", "--output", "output.json"]):
+        with patch("sys.argv", ["container_inventory", "--output", "output.json"]):
             args = setup_cli()
             self.assertEqual(args.output, "output.json")
 
         # Test with append option
-        with patch("sys.argv", ["container-inventory", "--output", "output.json", "--append"]):
+        with patch("sys.argv", ["container_inventory", "--output", "output.json", "--append"]):
             args = setup_cli()
             self.assertTrue(args.append)
 
         # Test with vulns-output
-        with patch("sys.argv", ["container-inventory", "--scan", "--vulns-output", "vulns.json"]):
+        with patch("sys.argv", ["container_inventory", "--scan", "--vulns-output", "vulns.json"]):
             args = setup_cli()
             self.assertTrue(args.scan)
             self.assertEqual(args.vulns_output, "vulns.json")
 
         # Test with image option
-        with patch("sys.argv", ["container-inventory", "--scan", "--image", "test:latest"]):
+        with patch("sys.argv", ["container_inventory", "--scan", "--image", "test:latest"]):
             args = setup_cli()
             self.assertTrue(args.scan)
             self.assertEqual(args.image, "test:latest")

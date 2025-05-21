@@ -1,0 +1,31 @@
+Source: container-inventory
+Section: utils
+Priority: optional
+Maintainer: Your Name <your.email@example.com>
+Build-Depends: debhelper-compat (= 13),
+               dh-python,
+               python3-all,
+               python3-setuptools,
+               python3-rich
+Standards-Version: 4.5.1
+Homepage: https://github.com/yourusername/container-inventory
+Vcs-Browser: https://github.com/yourusername/container-inventory
+Vcs-Git: https://github.com/yourusername/container-inventory.git
+
+Package: container-inventory
+Architecture: all
+Depends: ${python3:Depends},
+         ${misc:Depends}
+Suggests: docker.io | docker-ce,
+          podman,
+          trivy
+Description: Docker and Podman container image inventory and vulnerability scanner
+ A comprehensive Docker and Podman container image inventory and
+ vulnerability scanning tool with a rich CLI interface.
+ .
+ Features:
+  * Multi-Runtime Support: Works with both Docker and Podman
+  * Automatic Detection: Detects available container runtimes
+  * Vulnerability Scanning: Scans images for security vulnerabilities
+  * Rich CLI Interface: User-friendly, colorful command-line interface
+  * Flexible Output: Save inventory and scan results to JSON files
