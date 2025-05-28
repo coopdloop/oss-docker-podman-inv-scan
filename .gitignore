@@ -117,3 +117,10 @@ dmypy.json
 
 # Container output files
 *.json
+
+# Build artifacts
+*.deb
+*.rpm
+*.tar.gz
+*.dsc
+*.changes
