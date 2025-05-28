@@ -15,8 +15,10 @@ mkdir -p /tmp/build-source
 cp -r /source /tmp/build-source/${PACKAGE_NAME}-${VERSION}
 tar -czf ${BUILD_DIR}/SOURCES/${PACKAGE_NAME}-${VERSION}.tar.gz -C /tmp/build-source ${PACKAGE_NAME}-${VERSION}
 
-# Copy spec file
+# Copy spec file and additional sources
 cp ${SPEC_FILE} ${BUILD_DIR}/SPECS/
+cp /source/packaging/container-inventory.service ${BUILD_DIR}/SOURCES/
+cp /source/packaging/container-inventory.timer ${BUILD_DIR}/SOURCES/
 
 # Build RPM
 echo "Building RPM..."

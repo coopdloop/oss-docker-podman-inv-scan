@@ -26,7 +26,7 @@ build_rpm() {
     echo "Building RPM package using Docker..."
 
     # Build the Docker image
-    docker build -t container-inventory-rpm-builder -f Dockerfile.rpm .
+    docker build -t container-inventory-rpm-builder -f Dockerfile_rpm .
 
     # Run the container to build the RPM
     docker run --rm \
@@ -42,7 +42,7 @@ build_deb() {
     echo "Building DEB package using Docker..."
 
     # Build the Docker image
-    docker build -t container-inventory-deb-builder -f Dockerfile.deb .
+    docker build -t container-inventory-deb-builder -f Dockerfile_deb .
 
     # Run the container to build the DEB
     docker run --rm \

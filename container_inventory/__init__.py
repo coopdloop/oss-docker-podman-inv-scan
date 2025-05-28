@@ -1,7 +1,7 @@
 """
-Container Image Inventory and Vulnerability Scanner
+Container Image Inventory
 
-A comprehensive Docker and Podman container image inventory and vulnerability scanning tool.
+A comprehensive Docker and Podman container image inventory.
 """
 
 __version__ = "0.1.0"

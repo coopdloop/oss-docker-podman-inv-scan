@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""
+Direct execution script for container inventory CLI
+"""
+import sys
+import os
+
+# Add the project directory to Python path
+project_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_dir)
+
+# Also check for system installation path
+if os.path.exists('/usr/lib/container-inventory'):
+    sys.path.insert(0, '/usr/lib/container-inventory')
+
+from container_inventory.cli import main
+
+if __name__ == "__main__":
+    main()

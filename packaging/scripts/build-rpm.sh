@@ -5,7 +5,7 @@ set -e
 
 # Configuration
 PACKAGE_NAME="container-inventory"
-VERSION=$(grep -oP "__version__ = \"\K[^\"]+" ../../container_inventory/__init__.py)
+VERSION=$(grep "__version__" ../../container_inventory/__init__.py | sed 's/.*"\(.*\)".*/\1/')
 SPEC_FILE="../rpm/${PACKAGE_NAME}.spec"
 BUILD_DIR=$(pwd)/rpmbuild
 SOURCE_DIR=$(cd ../../ && pwd)
@@ -23,7 +23,11 @@ mkdir -p ${BUILD_DIR}/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 # Create source tarball
 echo "Creating source tarball..."
-(cd ${SOURCE_DIR}/.. && tar -czf ${BUILD_DIR}/SOURCES/${PACKAGE_NAME}-${VERSION}.tar.gz --transform "s/^${PACKAGE_NAME}/${PACKAGE_NAME}-${VERSION}/" ${PACKAGE_NAME})
+PROJECT_DIR=$(basename ${SOURCE_DIR})
+(cd ${SOURCE_DIR}/.. && \
+ cp -r ${PROJECT_DIR} ${PACKAGE_NAME}-${VERSION} && \
+ tar -czf ${BUILD_DIR}/SOURCES/${PACKAGE_NAME}-${VERSION}.tar.gz ${PACKAGE_NAME}-${VERSION} && \
+ rm -rf ${PACKAGE_NAME}-${VERSION})
 
 # Copy spec file
 cp ${SPEC_FILE} ${BUILD_DIR}/SPECS/

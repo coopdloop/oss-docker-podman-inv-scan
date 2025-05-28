@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Core functionality for Container Image Inventory and Vulnerability Scanner.
+Core functionality for Container Image Inventory.
 """
 
 import json
@@ -34,7 +34,7 @@ class Colors:
 
 
 class ContainerInventory:
-    """Manage Docker and Podman container image inventory and vulnerability scanning."""
+    """Manage Docker and Podman container image inventory."""
 
     def __init__(self, container_type: str = "all"):
         """
@@ -46,7 +46,6 @@ class ContainerInventory:
         self.container_type = container_type
         self.docker_available = self._check_tool_availability("docker")
         self.podman_available = self._check_tool_availability("podman")
-        self.trivy_available = self._check_tool_availability("trivy")
 
         # Check if at least one container runtime is available
         if container_type != "all" and not getattr(self, f"{container_type}_available"):
@@ -63,13 +62,6 @@ class ContainerInventory:
             # Only exit in non-test environments
             if "pytest" not in sys.modules:
                 sys.exit(1)
-
-        # Check if vulnerability scanner is available
-        if not self.trivy_available:
-            print(
-                f"{Colors.BOLD}{Colors.YELLOW}Warning:{Colors.RESET} Trivy vulnerability scanner not found. "
-                "Vulnerability scanning will be disabled."
-            )
 
     def _check_tool_availability(self, tool: str) -> bool:
         """Check if a command-line tool is available."""
@@ -180,85 +172,6 @@ class ContainerInventory:
             size /= 1024.0
         return f"{size:.2f}PB"
 
-    def scan_image_vulnerabilities(self, image_id: str, image_source: str | None) -> Dict:
-        """
-        Scan a container image for vulnerabilities using Trivy.
-
-        Args:
-            image_id: The ID or name of the image to scan
-            image_source: The source of the image ("docker" or "podman")
-
-        Returns:
-            Dictionary with vulnerability information
-        """
-        if not self.trivy_available:
-            return {"error": "Trivy scanner not available", "vulnerabilities": []}
-
-        print(f"{Colors.YELLOW}Scanning {image_id} for vulnerabilities...{Colors.RESET}")
-
-        try:
-            # Use different approaches for Docker vs Podman
-            if image_source == "podman":
-                # For Podman, export the image to a tarball and scan that instead
-                print(f"{Colors.BLUE}Using Podman export method for scanning...{Colors.RESET}")
-
-                # Create a temporary directory for the image tarball
-                import tempfile
-                import os
-
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    # Export the Podman image to a tarball
-                    image_tar = os.path.join(temp_dir, "image.tar")
-                    export_cmd = ["podman", "save", "-o", image_tar, image_id]
-
-                    export_result = subprocess.run(
-                        export_cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        check=False,
-                    )
-
-                    if export_result.returncode != 0:
-                        return {
-                            "error": f"Error exporting Podman image: {export_result.stderr}",
-                            "vulnerabilities": [],
-                        }
-
-                    # Now scan the tarball with Trivy
-                    result = subprocess.run(
-                        ["trivy", "image", "--input", image_tar, "--format", "json"],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        check=False,
-                    )
-            else:
-                # Default approach for Docker
-                result = subprocess.run(
-                    ["trivy", "image", "--format", "json", image_id],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    check=False,  # Don't raise exception on non-zero return code (Trivy returns non-zero when vulns found)
-                )
-
-            if result.returncode != 0 and not result.stdout:
-                return {"error": f"Error scanning image: {result.stderr}", "vulnerabilities": []}
-
-            try:
-                scan_result = json.loads(result.stdout)
-                return {
-                    "image": image_id,
-                    "scan_time": datetime.datetime.now().isoformat(),
-                    "results": scan_result,
-                }
-            except json.JSONDecodeError:
-                return {"error": "Could not parse scanner output", "vulnerabilities": []}
-
-        except Exception as e:
-            return {"error": f"Error during scan: {str(e)}", "vulnerabilities": []}
-
     def display_inventory(self, images: List[Dict]) -> None:
         """Display the container image inventory in a formatted table."""
         if not images:
@@ -306,114 +219,6 @@ class ContainerInventory:
             print(row)
 
         print("")  # Add empty line after table
-
-    def display_vulnerabilities(self, scan_result: Dict) -> None:
-        """Display vulnerability scan results."""
-        if "error" in scan_result and scan_result["error"]:
-            print(f"{Colors.BOLD}{Colors.RED}Error:{Colors.RESET} {scan_result['error']}")
-            return
-
-        print(f"\n{Colors.BOLD}Vulnerability Scan Results for {scan_result['image']}{Colors.RESET}")
-        print(f"Scan completed at: {scan_result['scan_time']}\n")
-
-        if "results" not in scan_result or not scan_result["results"]:
-            print(f"{Colors.GREEN}No vulnerabilities found.{Colors.RESET}")
-            return
-
-        # Process Trivy results
-        for result in scan_result["results"]:
-            if "Target" in result:
-                print(f"{Colors.BOLD}Target:{Colors.RESET} {result['Target']}")
-
-            if "Vulnerabilities" not in result or not result["Vulnerabilities"]:
-                print(f"{Colors.GREEN}No vulnerabilities found in this target.{Colors.RESET}")
-                continue
-
-            # Get max width for each column for proper formatting
-            col_widths = {
-                "ID": max(
-                    2,
-                    max(
-                        len(str(vuln.get("VulnerabilityID", "")))
-                        for vuln in result["Vulnerabilities"]
-                    ),
-                ),
-                "Package": max(
-                    7, max(len(str(vuln.get("PkgName", ""))) for vuln in result["Vulnerabilities"])
-                ),
-                "Installed": max(
-                    9,
-                    max(
-                        len(str(vuln.get("InstalledVersion", "")))
-                        for vuln in result["Vulnerabilities"]
-                    ),
-                ),
-                "Fixed In": max(
-                    8,
-                    max(
-                        len(str(vuln.get("FixedVersion", ""))) for vuln in result["Vulnerabilities"]
-                    ),
-                ),
-                "Severity": max(
-                    8, max(len(str(vuln.get("Severity", ""))) for vuln in result["Vulnerabilities"])
-                ),
-                "Title": 50,  # Limit title length
-            }
-
-            # Print vulnerabilities header
-            vuln_header = (
-                f"{Colors.BOLD}Vulnerabilities in {result.get('Target', 'Unknown')}{Colors.RESET}"
-            )
-            print("\n" + vuln_header)
-
-            # Print column headers
-            header = (
-                f"{Colors.CYAN}{'ID':<{col_widths['ID']}}{Colors.RESET} | "
-                f"{Colors.BLUE}{'Package':<{col_widths['Package']}}{Colors.RESET} | "
-                f"{Colors.BLUE}{'Installed':<{col_widths['Installed']}}{Colors.RESET} | "
-                f"{Colors.GREEN}{'Fixed In':<{col_widths['Fixed In']}}{Colors.RESET} | "
-                f"{Colors.YELLOW}{'Severity':<{col_widths['Severity']}}{Colors.RESET} | "
-                f"{Colors.WHITE}{'Title':<{col_widths['Title']}}{Colors.RESET}"
-            )
-            print(header)
-
-            # Print separator
-            separator = "-" * (sum(col_widths.values()) + len(col_widths) * 3)
-            print(separator)
-
-            # Sort vulnerabilities by severity
-            severity_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "UNKNOWN": 4}
-            sorted_vulns = sorted(
-                result["Vulnerabilities"],
-                key=lambda v: severity_order.get(v.get("Severity", "UNKNOWN").upper(), 999),
-            )
-
-            # Print vulnerabilities
-            for vuln in sorted_vulns:
-                severity = vuln.get("Severity", "UNKNOWN").upper()
-                severity_color = {
-                    "CRITICAL": Colors.RED + Colors.BOLD,
-                    "HIGH": Colors.RED,
-                    "MEDIUM": Colors.YELLOW,
-                    "LOW": Colors.GREEN,
-                    "UNKNOWN": Colors.BLUE,
-                }.get(severity, Colors.BLUE)
-
-                title = vuln.get("Title", "")
-                if len(title) > col_widths["Title"]:
-                    title = title[: col_widths["Title"] - 3] + "..."
-
-                row = (
-                    f"{vuln.get('VulnerabilityID', ''):<{col_widths['ID']}} | "
-                    f"{vuln.get('PkgName', ''):<{col_widths['Package']}} | "
-                    f"{vuln.get('InstalledVersion', ''):<{col_widths['Installed']}} | "
-                    f"{vuln.get('FixedVersion', ''):<{col_widths['Fixed In']}} | "
-                    f"{severity_color}{severity:<{col_widths['Severity']}}{Colors.RESET} | "
-                    f"{title:<{col_widths['Title']}}"
-                )
-                print(row)
-
-            print("")  # Add space between tables
 
     def save_inventory(self, images: List[Dict], output_file: str, append: bool = False) -> None:
         """
@@ -468,55 +273,3 @@ class ContainerInventory:
 
         except IOError as e:
             print(f"{Colors.BOLD}{Colors.RED}Error saving inventory:{Colors.RESET} {e}")
-
-    def save_vulnerabilities(
-        self, scan_results: List[Dict], output_file: str, append: bool = False
-    ) -> None:
-        """
-        Save vulnerability scan results to a file.
-
-        Args:
-            scan_results: List of vulnerability scan result dictionaries
-            output_file: Path to output file
-            append: Whether to append to existing file
-        """
-        mode = "a" if append and os.path.exists(output_file) else "w"
-
-        try:
-            # Similar logic to save_inventory
-            with open(output_file, mode) as f:
-                if append and os.path.exists(output_file) and os.path.getsize(output_file) == 0:
-                    mode = "w"
-
-                if append and os.path.exists(output_file) and os.path.getsize(output_file) > 0:
-                    f.seek(0)
-                    try:
-                        existing_data = json.load(f)
-
-                        if isinstance(existing_data, list):
-                            combined_data = existing_data + scan_results
-                            f.seek(0)
-                            f.truncate(0)
-                            json.dump(combined_data, f, indent=2)
-                            print(
-                                f"{Colors.GREEN}Successfully appended to {output_file}{Colors.RESET}"
-                            )
-                            return
-                        else:
-                            print(
-                                f"{Colors.YELLOW}Warning: Existing file is not a JSON array. Creating new file.{Colors.RESET}"
-                            )
-                            mode = "w"
-                    except json.JSONDecodeError:
-                        print(
-                            f"{Colors.YELLOW}Warning: Existing file is not valid JSON. Creating new file.{Colors.RESET}"
-                        )
-                        mode = "w"
-
-                if mode == "w":
-                    with open(output_file, "w") as f:
-                        json.dump(scan_results, f, indent=2)
-                        print(f"{Colors.GREEN}Successfully saved to {output_file}{Colors.RESET}")
-
-        except IOError as e:
-            print(f"{Colors.BOLD}{Colors.RED}Error saving vulnerability results:{Colors.RESET} {e}")

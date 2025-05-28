@@ -1,0 +1,67 @@
+FROM ubuntu:22.04
+
+# Install systemd and other required packages
+RUN apt-get update && apt-get install -y \
+    systemd \
+    systemd-sysv \
+    python3 \
+    python3-pip \
+    docker.io \
+    podman \
+    curl \
+    jq \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Remove unnecessary systemd services that cause issues in containers
+RUN find /etc/systemd/system \
+    /lib/systemd/system \
+    -path '*.wants/*' \
+    \( -name '*getty*' -o -name '*systemd-logind*' -o -name '*systemd-vconsole-setup*' -o -name '*systemd-readahead*' -o -name '*udev*' \) \
+    -exec rm \{} \; \
+    || true
+
+# Create application directory
+WORKDIR /app
+
+# Copy the source code
+COPY . .
+
+# Install pytest for testing
+RUN pip3 install pytest
+
+# Set up container-inventory script
+RUN ln -s /app/container-inventory /usr/local/bin/container-inventory
+
+# Install systemd service and timer files
+COPY packaging/container-inventory.service /etc/systemd/system/
+COPY packaging/container-inventory.timer /etc/systemd/system/
+
+# Create data directory
+RUN mkdir -p /var/lib/container-inventory
+
+# Enable the systemd service and timer
+RUN systemctl enable container-inventory.timer
+
+# Create a simple script to help with testing
+RUN echo '#!/bin/bash\n\
+echo "Container Inventory Test Environment"\n\
+echo "====================================="\n\
+echo "Available commands:"\n\
+echo "  systemctl status container-inventory.timer  - Check timer status"\n\
+echo "  systemctl list-timers                       - List all timers"\n\
+echo "  systemctl start container-inventory.service - Run service now"\n\
+echo "  journalctl -u container-inventory.service   - View service logs"\n\
+echo "  cat /var/lib/container-inventory/inventory.json | jq . - View results"\n\
+echo ""\n\
+echo "Testing the service manually:"\n\
+echo "  container-inventory --help"\n\
+echo ""\n\
+' > /usr/local/bin/container-inventory-help && chmod +x /usr/local/bin/container-inventory-help
+
+# Set up systemd as the init process
+EXPOSE 22
+STOPSIGNAL SIGRTMIN+3
+
+# Use systemd as the main command
+CMD ["/sbin/init"]

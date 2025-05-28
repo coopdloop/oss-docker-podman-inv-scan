@@ -1,0 +1,14 @@
+[Unit]
+Description=Run Container Inventory Scanner every 10 minutes
+Documentation=https://github.com/yourusername/container-inventory
+
+[Timer]
+# Run 3 minutes after boot
+OnBootSec=3min
+# Then run every 10 minutes
+OnUnitActiveSec=10min
+# Randomize start time by up to 30 seconds to avoid resource congestion
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

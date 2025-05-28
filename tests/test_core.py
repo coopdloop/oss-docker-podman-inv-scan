@@ -30,7 +30,7 @@ class TestContainerInventory(unittest.TestCase):
             "container_inventory.core.ContainerInventory._check_tool_availability"
         ) as mock_check:
             # Both Docker and Podman available
-            mock_check.side_effect = lambda tool: tool in ["docker", "podman", "trivy"]
+            mock_check.side_effect = lambda tool: tool in ["docker", "podman"]
             inventory = ContainerInventory()
             self.assertEqual(inventory.container_type, "all")
             self.assertTrue(inventory.docker_available)
